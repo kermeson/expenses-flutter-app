@@ -1,0 +1,30 @@
+# Automatically generated on 2023-01-20 UTC from https://codemagic.io/app/63cac676cb44be6f6aadaab3/settings
+# Note that this configuration is not an exact match to UI settings. Review and adjust as necessary.
+
+workflows:
+  default-workflow:
+    name: Default Workflow
+    max_build_duration: 60
+    environment:
+      flutter: default
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - flutter packages pub get
+      - find . -name "Podfile" -execdir pod install \;
+      - flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - '*.snap'
+      - build/windows/**/*.msix
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - kermeson@gmail.com
+      scripts:
+        - |
+          #!/bin/sh
+
+          echo "My first green build!"
