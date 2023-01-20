@@ -4,27 +4,42 @@
 workflows:
   default-workflow:
     name: Default Workflow
-    max_build_duration: 60
+    max_build_duration: 120
     environment:
       flutter: default
       xcode: latest
-      cocoapods: default
+      cocoapods: default  
+      vars:
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
     scripts:
-      - flutter packages pub get
-      - find . -name "Podfile" -execdir pod install \;
-      - flutter build ios --debug --no-codesign
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Get Flutter packages & Build
+        script: |
+          flutter packages pub get
+          flutter build ios
+        ignore_failure: true
+      - name: Build unsigned .app
+        script: |
+          xcodebuild -workspace "ios/$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration "Debug" \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/output
+          # If you are building a project instead of a workspace:  
+          # xcodebuild -project "ios/Runner.xcodeproj" \
+          #   -scheme "$XCODE_SCHEME" \
+          #   -configuration "Debug" \
+          #   -sdk iphonesimulator \
+          #   -derivedDataPath ios/output
+      - name: Create a .zip archive
+        script: |
+          cd ios/output/Build/Products/Debug-iphonesimulator
+          zip -r ios_app.zip $XCODE_SCHEME.app
     artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - '*.snap'
-      - build/windows/**/*.msix
-      - flutter_drive.log
+      - ios/output/Build/Products/Debug-iphonesimulator/*.zip
     publishing:
       email:
         recipients:
           - kermeson@gmail.com
-      scripts:
-        - |
-          #!/bin/sh
-
-          echo "My first green build!"
